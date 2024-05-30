@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moderation Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+        body {
+            background-color: black;
+            color: white; /* Set text color to white for better visibility */
+            font-family:'Poppins',sans-serif;
+            text-align: center;
+        }
+
+        .chart-container {
+            margin: 20px auto;
+            position: relative;
+            color: white; /* Set text color to white */
+        }
+
+        .chart-container canvas {
+            width: 100%;
+            height: auto;
+        }
+
+        .chart-name {
+            position: absolute;
+            top: -20px;
+            left: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: white; /* Set text color to white */
+            text-align: left;
+        }
+
+        .chart-container:after {
+            content: '';
+            display: block;
+            width: calc(100% - 40px);
+            height: 2px;
+            background-color: white;
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                width: 45%; /* Adjust the width for larger screens */
+                float: left;
+                margin: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <div class="chart-name">Pie Chart</div>
+        <canvas id="pieChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <div class="chart-name">Bar Chart</div>
+        <canvas id="barChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <div class="chart-name">Line Chart</div>
+        <canvas id="lineChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <div class="chart-name">Scatter Chart</div>
+        <canvas id="scatterChart"></canvas>
+    </div>
+    <div class="chart-container">
+        <div class="chart-name">Area Chart</div>
+        <canvas id="areaChart"></canvas>
+    </div>
+
+    <script>
+        // Load moderation results from JSON file
+        fetch('moderation_results.json')
+            .then(response => response.json())
+            .then(moderationResults => {
+                // Pie chart
+                new Chart(document.getElementById("pieChart"), {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(moderationResults.data),
+                        datasets: [{
+                            label: 'Moderation Results',
+                            data: Object.values(moderationResults.data),
+                            backgroundColor: [
+                                'red', 'green', 'blue', 'orange', 'purple',
+                                'yellow', 'cyan', 'magenta', 'brown', 'pink'
+                            ]
+                        }]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: 'Pie Chart'
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuad'
+                        },
+                        responsive: true
+                    }
+                });
+
+                // Bar chart
+                new Chart(document.getElementById("barChart"), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(moderationResults.data),
+                        datasets: [{
+                            label: 'Moderation Results',
+                            data: Object.values(moderationResults.data),
+                            backgroundColor: [
+                                'red', 'green', 'blue', 'orange', 'purple',
+                                'yellow', 'cyan', 'magenta', 'brown', 'pink'
+                            ]
+                        }]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: 'Bar Chart'
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuad'
+                        },
+                        responsive: true
+                    }
+                });
+
+                // Line chart
+                new Chart(document.getElementById("lineChart"), {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(moderationResults.data),
+                        datasets: [{
+                            label: 'Moderation Results',
+                            data: Object.values(moderationResults.data),
+                            borderColor: 'blue',
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: 'Line Chart'
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuad'
+                        },
+                        responsive: true
+                    }
+                });
+
+                // Scatter chart
+                new Chart(document.getElementById("scatterChart"), {
+                    type: 'scatter',
+                    data: {
+                        labels: Object.keys(moderationResults.data),
+                        datasets: [{
+                            label: 'Moderation Results',
+                            data: Object.entries(moderationResults.data).map(([label, value]) => ({ x: Math.random(), y: value })),
+                            borderColor: 'rgba(255, 255, 255, 0.7)', // White
+                            backgroundColor: 'rgba(255, 255, 255, 0.7)', // White
+                            pointRadius: 5
+                        }]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: 'Scatter Chart'
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuad'
+                        },
+                        responsive: true,
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+
+                // Area chart
+                new Chart(document.getElementById("areaChart"), {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(moderationResults.data),
+                        datasets: [{
+                            label: 'Moderation Results',
+                            data: Object.values(moderationResults.data),
+                            backgroundColor: 'rgba(255, 0, 0, 0.5)', // Red with opacity
+                            borderColor: 'rgba(255, 0, 0, 1)', // Red
+                            borderWidth: 1,
+                            fill: true // Fill area under the line
+                        }]
+                    },
+                    options: {
+                        title: {
+                            display: true,
+                            text: 'Area Chart'
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuad'
+                        },
+                        responsive: true,
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    beginAtZero: true
+                                }
+                            }]
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error loading moderation results:', error));
+    </script>
+</body>
+</html>
+

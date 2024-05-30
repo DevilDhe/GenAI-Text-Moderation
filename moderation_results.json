@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "data": {
+    "sexual": "0.025480",
+    "hate": "58.992000",
+    "harassment": "49.041000",
+    "self-harm": "0.000046",
+    "sexual/minors": "0.000022",
+    "hate/threatening": "0.002194",
+    "violence/graphic": "0.000025",
+    "self-harm/intent": "0.000012",
+    "self-harm/instructions": "0.000009",
+    "harassment/threatening": "0.010346",
+    "violence": "0.001161"
+  },
+  "processing_time": 1187,
+  "processing_id": "4b8a9ad9-a9c2-4a8e-8a0e-ed8c6ec14d87",
+  "processing_count": 1
+}
